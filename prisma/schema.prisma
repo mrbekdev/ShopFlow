@@ -1,0 +1,181 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+enum UserRole {
+  admin
+  kassir
+  omborchi
+  nonvoy
+}
+
+enum Unit {
+  kg
+  dona
+}
+
+enum PaymentType {
+  naqd
+  karta
+  terminal
+  qarz
+  aralash
+}
+
+enum RefundType {
+  naqd
+  karta
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+
+  users     User[]
+  products  Product[]
+  sales     Sale[]
+  debts     Debt[]
+  returns   ProductReturn[]
+  transfersFrom BranchTransfer[] @relation("FromBranch")
+  transfersTo   BranchTransfer[] @relation("ToBranch")
+  nonvoyProducts NonvoyProduct[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  phone     String   @unique
+  username  String   @unique
+  password  String
+  role      UserRole
+  branchId  String
+  createdAt DateTime @default(now())
+
+  branch    Branch  @relation(fields: [branchId], references: [id])
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  model     String
+  unit      Unit
+  barcode   String   @unique
+  costPrice Float
+  sellPrice Float
+  quantity  Int
+  branchId  String
+  createdAt DateTime @default(now())
+
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  saleItems SaleItem[]
+}
+
+model Sale {
+  id             String       @id @default(uuid())
+  totalAmount    Float
+  paymentType    PaymentType
+  cashAmount     Float?
+  cardAmount     Float?
+  terminalAmount Float?
+  debtAmount     Float?
+  customerName   String?
+  customerPhone  String?
+  prepayment     Float?
+  prepaymentType PaymentType?
+  sellerId       String
+  sellerRole     UserRole
+  branchId       String
+  createdAt      DateTime     @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+  items  SaleItem[]
+}
+
+model SaleItem {
+  id         String  @id @default(uuid())
+  saleId     String
+  productId  String
+  productName String
+  quantity   Int
+  price      Float
+  total      Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Debt {
+  id           String   @id @default(uuid())
+  saleId       String
+  customerName String
+  customerPhone String
+  totalDebt    Float
+  paidAmount   Float
+  remaining    Float
+  branchId     String
+  sellerId     String
+  createdAt    DateTime @default(now())
+
+  branch   Branch       @relation(fields: [branchId], references: [id])
+  payments DebtPayment[]
+}
+
+model DebtPayment {
+  id          String      @id @default(uuid())
+  debtId      String
+  amount      Float
+  paymentType PaymentType
+  createdAt   DateTime    @default(now())
+
+  debt Debt @relation(fields: [debtId], references: [id])
+}
+
+model ProductReturn {
+  id           String     @id @default(uuid())
+  saleId       String?
+  productId    String
+  productName  String
+  quantity     Int
+  reason       String
+  refundAmount Float
+  refundType   RefundType
+  branchId     String
+  sellerId     String
+  createdAt    DateTime   @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+}
+
+model BranchTransfer {
+  id           String   @id @default(uuid())
+  productId    String
+  productName  String
+  quantity     Int
+  fromBranchId String
+  toBranchId   String
+  transferredBy String
+  createdAt    DateTime @default(now())
+
+  fromBranch Branch @relation("FromBranch", fields: [fromBranchId], references: [id])
+  toBranch   Branch @relation("ToBranch", fields: [toBranchId], references: [id])
+}
+
+model NonvoyProduct {
+  id            String   @id @default(uuid())
+  expenses      Float
+  totalCost     Float
+  productName   String
+  model         String
+  outputQuantity Int
+  sellPrice     Float
+  branchId      String
+  createdBy     String
+  createdAt     DateTime @default(now())
+
+  branch Branch @relation(fields: [branchId], references: [id])
+}

@@ -27,9 +27,15 @@ interface UpdateProductDto {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(branchId?: string) {
+  findAll(branchId?: string, barcode?: string) {
     return this.prisma.product.findMany({
-      where: branchId ? { branchId } : undefined,
+      where:
+        branchId || barcode
+          ? {
+              ...(branchId ? { branchId } : {}),
+              ...(barcode ? { barcode } : {}),
+            }
+          : undefined,
       orderBy: { createdAt: 'desc' },
     });
   }

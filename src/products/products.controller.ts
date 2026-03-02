@@ -28,8 +28,11 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.productsService.findAll(branchId);
+  findAll(
+    @Query('branchId') branchId?: string,
+    @Query('barcode') barcode?: string,
+  ) {
+    return this.productsService.findAll(branchId, barcode);
   }
 
   @Post()

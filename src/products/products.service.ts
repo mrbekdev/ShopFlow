@@ -40,6 +40,19 @@ export class ProductsService {
     });
   }
 
+  async importMany(rows: CreateProductDto[]) {
+    if (!rows.length) {
+      return { count: 0 };
+    }
+
+    const result = await this.prisma.product.createMany({
+      data: rows,
+      skipDuplicates: true,
+    });
+
+    return { count: result.count };
+  }
+
   create(data: CreateProductDto) {
     return this.prisma.product.create({ data });
   }

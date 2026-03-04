@@ -9,6 +9,7 @@ interface CreateProductDto {
   barcode: string;
   costPrice: number;
   sellPrice: number;
+  price: number;
   quantity: number;
   branchId: string;
 }
@@ -20,6 +21,7 @@ interface UpdateProductDto {
   barcode?: string;
   costPrice?: number;
   sellPrice?: number;
+  price?: number;
   quantity?: number;
 }
 
@@ -29,15 +31,23 @@ export class ProductsService {
 
   findAll(branchId?: string, barcode?: string) {
     return this.prisma.product.findMany({
-      where:
-        branchId || barcode
-          ? {
-              ...(branchId ? { branchId } : {}),
-              ...(barcode ? { barcode } : {}),
-            }
-          : undefined,
+      where: {
+        status: 'ACTIVE',
+        ...(branchId ? { branchId } : {}),
+        ...(barcode ? { barcode } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+    if (!product) {
+      throw new NotFoundException('Mahsulot topilmadi');
+    }
+    return product;
   }
 
   async importMany(rows: CreateProductDto[]) {
@@ -72,5 +82,13 @@ export class ProductsService {
     } catch {
       throw new NotFoundException('Mahsulot topilmadi');
     }
+  }
+
+  async deleteMany(ids: string[]) {
+    const result = await this.prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { status: 'DELETED' },
+    });
+    return { count: result.count };
   }
 }

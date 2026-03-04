@@ -21,6 +21,21 @@ export class DebtsController {
     return this.debtsService.getPayments(id);
   }
 
+  @Get('old-payments')
+  getOldPayments(@Query('branchId') branchId?: string) {
+    return this.debtsService.getOldPayments(branchId);
+  }
+
+  @Get('prepayments')
+  getPrepayments(@Query('branchId') branchId?: string) {
+    return this.debtsService.getPrepayments(branchId);
+  }
+
+  @Get('prepayment-amounts')
+  getPrepaymentAmounts(@Query('branchId') branchId?: string) {
+    return this.debtsService.getPrepaymentAmounts(branchId);
+  }
+
   @Post(':id/payments')
   addPayment(@Param('id') id: string, @Body() dto: AddDebtPaymentDto) {
     return this.debtsService.addPayment(id, dto.amount, dto.paymentType);

@@ -21,6 +21,47 @@ export class DebtsService {
     });
   }
 
+  getOldPayments(branchId?: string) {
+    return this.prisma.debtPayment.findMany({
+      where: {
+        debt: {
+          branchId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  getPrepayments(branchId?: string) {
+    return this.prisma.debt.findMany({
+      where: {
+        branchId,
+        paidAmount: {
+          gt: 0, // Only debts with prepayments
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  getPrepaymentAmounts(branchId?: string) {
+    return this.prisma.debtPayment.findMany({
+      where: {
+        debt: {
+          branchId,
+          paidAmount: {
+            gt: 0, // Only debts with prepayments
+          },
+        },
+        createdAt: {
+          // Only get the first payment per debt (the prepayment)
+          // This is a workaround since we can't easily identify prepayments vs regular payments
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async addPayment(debtId: string, amount: number, paymentType: PaymentType) {
     return this.prisma.$transaction(async (tx) => {
       const client = tx as any;

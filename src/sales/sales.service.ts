@@ -83,18 +83,29 @@ export class SalesService {
 
       // Create debt if there is any remaining amount to be paid
       if (data.debtAmount && data.debtAmount > 0) {
-        await client.debt.create({
+        const debt = await client.debt.create({
           data: {
             saleId: sale.id,
             customerName: data.customerName!,
             customerPhone: data.customerPhone!,
             totalDebt: data.debtAmount,
-            paidAmount: 0,
-            remaining: data.debtAmount,
+            paidAmount: data.prepayment || 0,
+            remaining: data.debtAmount - (data.prepayment || 0),
             branchId: data.branchId,
             sellerId: data.sellerId,
           },
         });
+
+        // Create payment record for prepayment if exists
+        if (data.prepayment && data.prepayment > 0) {
+          await client.debtPayment.create({
+            data: {
+              debtId: debt.id,
+              amount: data.prepayment,
+              paymentType: data.prepaymentType || 'naqd',
+            },
+          });
+        }
       }
 
       return sale;

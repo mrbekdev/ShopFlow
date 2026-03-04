@@ -11,6 +11,7 @@ class CreateProductDto {
   barcode: string;
   costPrice: number;
   sellPrice: number;
+  price: number;
   quantity: number;
   branchId: string;
 }
@@ -22,12 +23,28 @@ class UpdateProductDto {
   barcode?: string;
   costPrice?: number;
   sellPrice?: number;
+  price?: number;
   quantity?: number;
 }
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  @Get('bulk')
+  getBulk() {
+    return { message: 'Bulk endpoint' };
+  }
+
+  @Delete('bulk')
+  deleteMany(@Body() body: { ids: string[] }) {
+    return this.productsService.deleteMany(body.ids);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
+  }
 
   @Get()
   findAll(
@@ -71,6 +88,7 @@ export class ProductsController {
         barcode: String(row.Barcode ?? row.barcode ?? ''),
         costPrice: Number(row.CostPrice ?? row.costPrice ?? 0),
         sellPrice: Number(row.SellPrice ?? row.sellPrice ?? 0),
+        price: Number(row.Price ?? row.price ?? 0),
         quantity: Number(row.Quantity ?? row.quantity ?? 0),
         branchId,
       };

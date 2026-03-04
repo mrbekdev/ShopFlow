@@ -30,6 +30,11 @@ enum RefundType {
   karta
 }
 
+enum ProductStatus {
+  ACTIVE
+  DELETED
+}
+
 model Branch {
   id        String   @id @default(uuid())
   name      String
@@ -60,16 +65,18 @@ model User {
 }
 
 model Product {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   name      String
   model     String
   unit      Unit
-  barcode   String   @unique
+  barcode   String       @unique
   costPrice Float
   sellPrice Float
+  price     Float        @default(0)
   quantity  Int
+  status    ProductStatus @default(ACTIVE)
   branchId  String
-  createdAt DateTime @default(now())
+  createdAt DateTime     @default(now())
 
   branch    Branch  @relation(fields: [branchId], references: [id])
   saleItems SaleItem[]

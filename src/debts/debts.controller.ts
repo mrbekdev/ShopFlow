@@ -36,6 +36,11 @@ export class DebtsController {
     return this.debtsService.getPrepaymentAmounts(branchId);
   }
 
+  @Get('regular-payments')
+  getRegularDebtPayments(@Query('branchId') branchId?: string) {
+    return this.debtsService.getRegularDebtPayments(branchId);
+  }
+
   @Post(':id/payments')
   addPayment(@Param('id') id: string, @Body() dto: AddDebtPaymentDto) {
     return this.debtsService.addPayment(id, dto.amount, dto.paymentType);

@@ -29,7 +29,7 @@ interface CreateSaleInput {
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   findAll(branchId?: string, sellerId?: string) {
     return this.prisma.sale.findMany({
@@ -81,28 +81,33 @@ export class SalesService {
         });
       }
 
-      // Create debt if there is any remaining amount to be paid
-      if (data.debtAmount && data.debtAmount > 0) {
+      // Create debt if the sale is on credit
+      if (data.paymentType === 'qarz') {
+        const totalDebt = data.totalAmount;
+        const paidAmount = data.prepayment || 0;
+        const remaining = totalDebt - paidAmount;
+
         const debt = await client.debt.create({
           data: {
             saleId: sale.id,
             customerName: data.customerName!,
             customerPhone: data.customerPhone!,
-            totalDebt: data.debtAmount,
-            paidAmount: data.prepayment || 0,
-            remaining: data.debtAmount - (data.prepayment || 0),
+            totalDebt: totalDebt,
+            paidAmount: paidAmount,
+            remaining: remaining,
             branchId: data.branchId,
             sellerId: data.sellerId,
           },
         });
 
         // Create payment record for prepayment if exists
-        if (data.prepayment && data.prepayment > 0) {
+        if (paidAmount > 0) {
           await client.debtPayment.create({
             data: {
               debtId: debt.id,
-              amount: data.prepayment,
+              amount: paidAmount,
               paymentType: data.prepaymentType || 'naqd',
+              isPrepayment: true,
             },
           });
         }

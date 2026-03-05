@@ -49,6 +49,7 @@ model Branch {
   transfersFrom BranchTransfer[] @relation("FromBranch")
   transfersTo   BranchTransfer[] @relation("ToBranch")
   nonvoyProducts NonvoyProduct[]
+  productionRecords ProductionRecord[]
 }
 
 model User {
@@ -62,6 +63,8 @@ model User {
   createdAt DateTime @default(now())
 
   branch    Branch  @relation(fields: [branchId], references: [id])
+  productHistories ProductHistory[]
+  productions      ProductionRecord[] @relation("Producer")
 }
 
 model Product {
@@ -80,6 +83,9 @@ model Product {
 
   branch    Branch  @relation(fields: [branchId], references: [id])
   saleItems SaleItem[]
+  histories ProductHistory[]
+  producedRecords ProductionRecord[] @relation("ProducedProduct")
+  usedInProductions ProductionMaterial[] @relation("MaterialProduct")
 }
 
 model Sale {
@@ -137,6 +143,7 @@ model DebtPayment {
   debtId      String
   amount      Float
   paymentType PaymentType
+  isPrepayment Boolean     @default(false)
   createdAt   DateTime    @default(now())
 
   debt Debt @relation(fields: [debtId], references: [id])
@@ -185,4 +192,43 @@ model NonvoyProduct {
   createdAt     DateTime @default(now())
 
   branch Branch @relation(fields: [branchId], references: [id])
+}
+
+model ProductHistory {
+  id          String   @id @default(uuid())
+  productId   String
+  userId      String
+  action      String   // CREATE, UPDATE, DELETE
+  changes     String?  // JSON string
+  createdAt   DateTime @default(now())
+
+  product     Product  @relation(fields: [productId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model ProductionRecord {
+  id                  String   @id @default(uuid())
+  branchId            String
+  createdBy           String
+  finishedProductId   String
+  finishedProductName String
+  outputQuantity      Float
+  expenses            Float?
+  createdAt           DateTime @default(now())
+
+  branch              Branch   @relation(fields: [branchId], references: [id])
+  user                User     @relation("Producer", fields: [createdBy], references: [id])
+  finishedProduct     Product  @relation("ProducedProduct", fields: [finishedProductId], references: [id])
+  materials           ProductionMaterial[]
+}
+
+model ProductionMaterial {
+  id               String   @id @default(uuid())
+  productionId     String
+  productId        String
+  productName      String
+  quantity         Float
+
+  production       ProductionRecord @relation(fields: [productionId], references: [id], onDelete: Cascade)
+  product          Product          @relation("MaterialProduct", fields: [productId], references: [id])
 }

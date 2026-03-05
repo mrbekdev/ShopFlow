@@ -49,16 +49,22 @@ export class DebtsService {
       where: {
         debt: {
           branchId,
-          paidAmount: {
-            gt: 0, // Only debts with prepayments
-          },
         },
-        createdAt: {
-          // Only get the first payment per debt (the prepayment)
-          // This is a workaround since we can't easily identify prepayments vs regular payments
-        },
+        isPrepayment: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  getRegularDebtPayments(branchId?: string) {
+    return this.prisma.debtPayment.findMany({
+      where: {
+        debt: {
+          branchId,
+        },
+        isPrepayment: false,
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -68,8 +74,18 @@ export class DebtsService {
       const debt = await client.debt.findUnique({ where: { id: debtId } });
       if (!debt) throw new NotFoundException('Qarz topilmadi');
 
+      // Check if payment amount exceeds remaining debt
+      if (amount > debt.remaining) {
+        throw new Error(`To'lov summasi qolgan qarzdan katta bo'lishi mumkin emas. Qolgan qarz: ${debt.remaining} so'm`);
+      }
+
       const payment = await client.debtPayment.create({
-        data: { debtId, amount, paymentType },
+        data: { 
+          debtId, 
+          amount, 
+          paymentType,
+          isPrepayment: false, // Regular payments are not prepayments
+        },
       });
 
       await client.debt.update({

@@ -14,6 +14,7 @@ class CreateProductDto {
   price: number;
   quantity: number;
   branchId: string;
+  userId: string;
 }
 
 class UpdateProductDto {
@@ -25,11 +26,12 @@ class UpdateProductDto {
   sellPrice?: number;
   price?: number;
   quantity?: number;
+  userId: string;
 }
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @Get('bulk')
   getBulk() {
@@ -37,13 +39,18 @@ export class ProductsController {
   }
 
   @Delete('bulk')
-  deleteMany(@Body() body: { ids: string[] }) {
-    return this.productsService.deleteMany(body.ids);
+  deleteMany(@Body() body: { ids: string[], userId: string }) {
+    return this.productsService.deleteMany(body.ids, body.userId);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
+  }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.productsService.getHistory(id);
   }
 
   @Get()
@@ -64,12 +71,16 @@ export class ProductsController {
   async importExcel(
     @UploadedFile() file: Express.Multer.File,
     @Query('branchId') branchId?: string,
+    @Query('userId') userId?: string,
   ) {
     if (!file) {
       throw new BadRequestException('Fayl yuborilmadi');
     }
     if (!branchId) {
       throw new BadRequestException('branchId talab qilinadi');
+    }
+    if (!userId) {
+      throw new BadRequestException('userId talab qilinadi');
     }
 
     const workbook = XLSX.read(file.buffer, { type: 'buffer' });
@@ -91,6 +102,7 @@ export class ProductsController {
         price: Number(row.Price ?? row.price ?? 0),
         quantity: Number(row.Quantity ?? row.quantity ?? 0),
         branchId,
+        userId,
       };
 
       return record;
@@ -109,7 +121,10 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productsService.remove(id);
+  remove(@Param('id') id: string, @Query('userId') userId: string) {
+    if (!userId) {
+      throw new BadRequestException('userId is required');
+    }
+    return this.productsService.remove(id, userId);
   }
 }

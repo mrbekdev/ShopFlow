@@ -1,20 +1,25 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { NonvoyService } from './nonvoy.service';
 
-class CreateNonvoyProductDto {
-  expenses: number;
-  totalCost: number;
+class ProductionMaterialDto {
+  productId: string;
   productName: string;
-  model: string;
-  outputQuantity: number;
-  sellPrice: number;
+  quantity: number;
+}
+
+class CreateProductionDto {
   branchId: string;
   createdBy: string;
+  finishedProductId: string;
+  finishedProductName: string;
+  outputQuantity: number;
+  expenses?: number;
+  materials: ProductionMaterialDto[];
 }
 
 @Controller('nonvoy-products')
 export class NonvoyController {
-  constructor(private readonly nonvoyService: NonvoyService) {}
+  constructor(private readonly nonvoyService: NonvoyService) { }
 
   @Get()
   findAll(@Query('branchId') branchId?: string) {
@@ -22,7 +27,7 @@ export class NonvoyController {
   }
 
   @Post()
-  create(@Body() dto: CreateNonvoyProductDto) {
+  create(@Body() dto: CreateProductionDto) {
     return this.nonvoyService.create(dto);
   }
 }

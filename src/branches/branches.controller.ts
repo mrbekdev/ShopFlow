@@ -1,19 +1,22 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { BranchesService } from './branches.service';
+import { BranchType } from '@prisma/client';
 
 class CreateBranchDto {
   name: string;
   address?: string;
+  type?: BranchType;
 }
 
 class UpdateBranchDto {
   name?: string;
   address?: string;
+  type?: BranchType;
 }
 
 @Controller('branches')
 export class BranchesController {
-  constructor(private readonly branchesService: BranchesService) {}
+  constructor(private readonly branchesService: BranchesService) { }
 
   @Get()
   findAll() {

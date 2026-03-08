@@ -5,11 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class DebtsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string) {
+  findAll(branchId?: string, sellerId?: string) {
     return this.prisma.debt.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        ...(branchId ? { branchId } : {}),
+        ...(sellerId ? { sellerId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -21,21 +24,23 @@ export class DebtsService {
     });
   }
 
-  getOldPayments(branchId?: string) {
+  getOldPayments(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
         debt: {
-          branchId,
+          ...(branchId ? { branchId } : {}),
+          ...(sellerId ? { sellerId } : {}),
         },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  getPrepayments(branchId?: string) {
+  getPrepayments(branchId?: string, sellerId?: string) {
     return this.prisma.debt.findMany({
       where: {
-        branchId,
+        ...(branchId ? { branchId } : {}),
+        ...(sellerId ? { sellerId } : {}),
         paidAmount: {
           gt: 0, // Only debts with prepayments
         },
@@ -44,11 +49,12 @@ export class DebtsService {
     });
   }
 
-  getPrepaymentAmounts(branchId?: string) {
+  getPrepaymentAmounts(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
         debt: {
-          branchId,
+          ...(branchId ? { branchId } : {}),
+          ...(sellerId ? { sellerId } : {}),
         },
         isPrepayment: true,
       },
@@ -56,11 +62,12 @@ export class DebtsService {
     });
   }
 
-  getRegularDebtPayments(branchId?: string) {
+  getRegularDebtPayments(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
         debt: {
-          branchId,
+          ...(branchId ? { branchId } : {}),
+          ...(sellerId ? { sellerId } : {}),
         },
         isPrepayment: false,
       },
@@ -80,9 +87,9 @@ export class DebtsService {
       }
 
       const payment = await client.debtPayment.create({
-        data: { 
-          debtId, 
-          amount, 
+        data: {
+          debtId,
+          amount,
           paymentType,
           isPrepayment: false, // Regular payments are not prepayments
         },

@@ -16,11 +16,14 @@ interface CreateReturnDto {
 
 @Injectable()
 export class ReturnsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string) {
+  findAll(branchId?: string, sellerId?: string) {
     return this.prisma.productReturn.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        ...(branchId ? { branchId } : {}),
+        ...(sellerId ? { sellerId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

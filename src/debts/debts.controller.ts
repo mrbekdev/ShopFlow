@@ -9,11 +9,14 @@ class AddDebtPaymentDto {
 
 @Controller('debts')
 export class DebtsController {
-  constructor(private readonly debtsService: DebtsService) {}
+  constructor(private readonly debtsService: DebtsService) { }
 
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.debtsService.findAll(branchId);
+  findAll(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.findAll(branchId, sellerId);
   }
 
   @Get(':id/payments')
@@ -22,23 +25,35 @@ export class DebtsController {
   }
 
   @Get('old-payments')
-  getOldPayments(@Query('branchId') branchId?: string) {
-    return this.debtsService.getOldPayments(branchId);
+  getOldPayments(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.getOldPayments(branchId, sellerId);
   }
 
   @Get('prepayments')
-  getPrepayments(@Query('branchId') branchId?: string) {
-    return this.debtsService.getPrepayments(branchId);
+  getPrepayments(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.getPrepayments(branchId, sellerId);
   }
 
   @Get('prepayment-amounts')
-  getPrepaymentAmounts(@Query('branchId') branchId?: string) {
-    return this.debtsService.getPrepaymentAmounts(branchId);
+  getPrepaymentAmounts(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.getPrepaymentAmounts(branchId, sellerId);
   }
 
   @Get('regular-payments')
-  getRegularDebtPayments(@Query('branchId') branchId?: string) {
-    return this.debtsService.getRegularDebtPayments(branchId);
+  getRegularDebtPayments(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.getRegularDebtPayments(branchId, sellerId);
   }
 
   @Post(':id/payments')

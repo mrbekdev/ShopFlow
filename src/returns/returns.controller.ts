@@ -16,11 +16,14 @@ class CreateReturnDto {
 
 @Controller('returns')
 export class ReturnsController {
-  constructor(private readonly returnsService: ReturnsService) {}
+  constructor(private readonly returnsService: ReturnsService) { }
 
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.returnsService.findAll(branchId);
+  findAll(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.returnsService.findAll(branchId, sellerId);
   }
 
   @Post()

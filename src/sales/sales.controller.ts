@@ -29,7 +29,16 @@ class CreateSaleDto {
 
 @Controller('sales')
 export class SalesController {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(private readonly salesService: SalesService) { }
+
+  @Get('stats')
+  getStats(
+    @Query('branchId') branchId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.salesService.getStats(branchId, dateFrom, dateTo);
+  }
 
   @Get()
   findAll(

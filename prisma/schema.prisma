@@ -73,6 +73,11 @@ model User {
   productions      ProductionRecord[] @relation("Producer")
 }
 
+enum ProductType {
+  PRODUCT
+  MATERIAL
+}
+
 model Product {
   id        String       @id @default(uuid())
   name      String
@@ -83,6 +88,7 @@ model Product {
   sellPrice Float
   price     Float        @default(0)
   quantity  Int
+  type      ProductType  @default(PRODUCT)
   status    ProductStatus @default(ACTIVE)
   branchId  String
   createdAt DateTime     @default(now())

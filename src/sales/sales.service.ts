@@ -42,6 +42,58 @@ export class SalesService {
     });
   }
 
+  async getStats(branchId?: string, dateFrom?: string, dateTo?: string) {
+    // Build date filter
+    const dateFilter: any = {};
+    if (dateFrom) {
+      dateFilter.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+    }
+    if (dateTo) {
+      dateFilter.lte = new Date(`${dateTo}T23:59:59.999Z`);
+    }
+
+    // Fetch sales with items and related products
+    const sales = await this.prisma.sale.findMany({
+      where: {
+        ...(branchId ? { branchId } : {}),
+        ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    let totalRevenue = 0;
+    let totalCostPrice = 0;
+    let totalItemsSold = 0;
+
+    for (const sale of sales) {
+      for (const item of sale.items) {
+        const sellPrice = item.price;
+        const costPrice = (item as any).product?.costPrice || 0;
+        const qty = item.quantity;
+
+        totalRevenue += sellPrice * qty;
+        totalCostPrice += costPrice * qty;
+        totalItemsSold += qty;
+      }
+    }
+
+    const netProfit = totalRevenue - totalCostPrice;
+
+    return {
+      salesCount: sales.length,
+      totalItemsSold,
+      totalRevenue: Math.round(totalRevenue),
+      totalCostPrice: Math.round(totalCostPrice),
+      netProfit: Math.round(netProfit),
+    };
+  }
+
   async create(data: CreateSaleInput) {
     return this.prisma.$transaction(async (tx) => {
       const client = tx as any;

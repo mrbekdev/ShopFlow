@@ -5,6 +5,7 @@ import { PaymentType } from '@prisma/client';
 class AddDebtPaymentDto {
   amount: number;
   paymentType: PaymentType;
+  sellerId: string;
 }
 
 @Controller('debts')
@@ -58,6 +59,6 @@ export class DebtsController {
 
   @Post(':id/payments')
   addPayment(@Param('id') id: string, @Body() dto: AddDebtPaymentDto) {
-    return this.debtsService.addPayment(id, dto.amount, dto.paymentType);
+    return this.debtsService.addPayment(id, dto.amount, dto.paymentType, dto.sellerId);
   }
 }

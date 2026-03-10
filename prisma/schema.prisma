@@ -158,6 +158,7 @@ model DebtPayment {
   amount      Float
   paymentType PaymentType
   isPrepayment Boolean     @default(false)
+  sellerId    String?
   createdAt   DateTime    @default(now())
 
   debt Debt @relation(fields: [debtId], references: [id])

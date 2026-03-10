@@ -160,6 +160,7 @@ export class SalesService {
               amount: paidAmount,
               paymentType: data.prepaymentType || 'naqd',
               isPrepayment: true,
+              sellerId: data.sellerId,
             },
           });
         }

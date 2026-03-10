@@ -27,9 +27,9 @@ export class DebtsService {
   getOldPayments(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
+        ...(sellerId ? { sellerId } : {}),
         debt: {
           ...(branchId ? { branchId } : {}),
-          ...(sellerId ? { sellerId } : {}),
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -52,9 +52,9 @@ export class DebtsService {
   getPrepaymentAmounts(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
+        ...(sellerId ? { sellerId } : {}),
         debt: {
           ...(branchId ? { branchId } : {}),
-          ...(sellerId ? { sellerId } : {}),
         },
         isPrepayment: true,
       },
@@ -65,9 +65,9 @@ export class DebtsService {
   getRegularDebtPayments(branchId?: string, sellerId?: string) {
     return this.prisma.debtPayment.findMany({
       where: {
+        ...(sellerId ? { sellerId } : {}),
         debt: {
           ...(branchId ? { branchId } : {}),
-          ...(sellerId ? { sellerId } : {}),
         },
         isPrepayment: false,
       },
@@ -75,7 +75,7 @@ export class DebtsService {
     });
   }
 
-  async addPayment(debtId: string, amount: number, paymentType: PaymentType) {
+  async addPayment(debtId: string, amount: number, paymentType: PaymentType, sellerId: string) {
     return this.prisma.$transaction(async (tx) => {
       const client = tx as any;
       const debt = await client.debt.findUnique({ where: { id: debtId } });
@@ -91,6 +91,7 @@ export class DebtsService {
           debtId,
           amount,
           paymentType,
+          sellerId,
           isPrepayment: false, // Regular payments are not prepayments
         },
       });

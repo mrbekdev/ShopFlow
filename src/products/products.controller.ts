@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { Unit, ProductType } from '@prisma/client';
+import { Unit } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as XLSX from 'xlsx';
 
@@ -13,7 +13,6 @@ class CreateProductDto {
   sellPrice: number;
   price: number;
   quantity: number;
-  type?: ProductType;
   branchId: string;
   userId: string;
 }
@@ -27,7 +26,6 @@ class UpdateProductDto {
   sellPrice?: number;
   price?: number;
   quantity?: number;
-  type?: ProductType;
   userId: string;
 }
 
@@ -59,9 +57,8 @@ export class ProductsController {
   findAll(
     @Query('branchId') branchId?: string,
     @Query('barcode') barcode?: string,
-    @Query('type') type?: ProductType,
   ) {
-    return this.productsService.findAll(branchId, barcode, type);
+    return this.productsService.findAll(branchId, barcode);
   }
 
   @Post()
@@ -104,7 +101,6 @@ export class ProductsController {
         sellPrice: Number(row.SellPrice ?? row.sellPrice ?? 0),
         price: Number(row.Price ?? row.price ?? 0),
         quantity: Number(row.Quantity ?? row.quantity ?? 0),
-        type: (row.Type ?? row.type ?? 'PRODUCT').toString().toUpperCase() === 'MATERIAL' ? ProductType.MATERIAL : ProductType.PRODUCT,
         branchId,
         userId,
       };

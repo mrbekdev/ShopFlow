@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PaymentType, UserRole } from '@prisma/client';
 
 interface SaleItemInput {
-  productId: string;
+  productId?: string;
+  nonId?: string;
   productName: string;
   quantity: number;
   price: number;
@@ -62,6 +63,7 @@ export class SalesService {
         items: {
           include: {
             product: true,
+            non: true,
           },
         },
       },
@@ -74,7 +76,9 @@ export class SalesService {
     for (const sale of sales) {
       for (const item of sale.items) {
         const sellPrice = item.price;
-        const costPrice = (item as any).product?.costPrice || 0;
+        const productCost = (item as any).product?.costPrice || 0;
+        const nonCost = (item as any).non?.costPrice || 0;
+        const costPrice = item.productId ? productCost : nonCost;
         const qty = item.quantity;
 
         totalRevenue += sellPrice * qty;
@@ -115,6 +119,7 @@ export class SalesService {
           items: {
             create: data.items.map((i) => ({
               productId: i.productId,
+              nonId: i.nonId,
               productName: i.productName,
               quantity: i.quantity,
               price: i.price,
@@ -125,12 +130,19 @@ export class SalesService {
         include: { items: true },
       });
 
-      // Decrease product quantities
+      // Decrease quantities
       for (const item of data.items) {
-        await client.product.update({
-          where: { id: item.productId },
-          data: { quantity: { decrement: item.quantity } },
-        });
+        if (item.productId) {
+          await client.product.update({
+            where: { id: item.productId },
+            data: { quantity: { decrement: item.quantity } },
+          });
+        } else if (item.nonId) {
+          await client.non.update({
+            where: { id: item.nonId },
+            data: { quantity: { decrement: item.quantity } },
+          });
+        }
       }
 
       // Create debt if the sale is on credit

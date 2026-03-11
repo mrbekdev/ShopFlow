@@ -10,7 +10,7 @@ interface ProductionMaterialDto {
 interface CreateProductionDto {
   branchId: string;
   createdBy: string;
-  finishedProductId: string;
+  finishedNonId: string;
   finishedProductName: string;
   outputQuantity: number;
   expenses?: number;
@@ -39,7 +39,7 @@ export class NonvoyService {
         data: {
           branchId: data.branchId,
           createdBy: data.createdBy,
-          finishedProductId: data.finishedProductId,
+          finishedNonId: data.finishedNonId,
           finishedProductName: data.finishedProductName,
           outputQuantity: data.outputQuantity,
           expenses: data.expenses,
@@ -70,18 +70,18 @@ export class NonvoyService {
         });
       }
 
-      // 3. Increment finished product
-      await tx.product.update({
-        where: { id: data.finishedProductId },
+      // 3. Increment finished product (Non)
+      await tx.non.update({
+        where: { id: data.finishedNonId },
         data: { quantity: { increment: data.outputQuantity } },
       });
 
       await tx.productHistory.create({
         data: {
-          productId: data.finishedProductId,
+          productId: data.materials[0]?.productId || '', // Fallback if no materials
           userId: data.createdBy,
           action: 'PRODUCTION_ADD',
-          changes: JSON.stringify({ reason: `Ishlab chiqarish orqali ${data.outputQuantity} qo'shildi` }),
+          changes: JSON.stringify({ reason: `Ishlab chiqarish orqali ${data.outputQuantity} ta ${data.finishedProductName} qo'shildi` }),
         },
       });
 

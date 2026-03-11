@@ -7,6 +7,19 @@ import { PrismaService } from '../prisma/prisma.service';
 export class DebtsService {
   constructor(private readonly prisma: PrismaService) { }
 
+  async getTotalRemaining(branchId?: string, sellerId?: string) {
+    const result = await this.prisma.debt.aggregate({
+      where: {
+        ...(branchId ? { branchId } : {}),
+        ...(sellerId ? { sellerId } : {}),
+      },
+      _sum: {
+        remaining: true,
+      },
+    });
+    return { totalRemaining: result._sum.remaining || 0 };
+  }
+
   findAll(branchId?: string, sellerId?: string) {
     return this.prisma.debt.findMany({
       where: {

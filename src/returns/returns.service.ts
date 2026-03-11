@@ -4,7 +4,8 @@ import { RefundType } from '@prisma/client';
 
 interface CreateReturnDto {
   saleId?: string;
-  productId: string;
+  productId?: string;
+  nonId?: string;
   productName: string;
   quantity: number;
   reason: string;
@@ -33,10 +34,17 @@ export class ReturnsService {
       const client = tx as any;
       const ret = await client.productReturn.create({ data });
 
-      await client.product.update({
-        where: { id: data.productId },
-        data: { quantity: { increment: data.quantity } },
-      });
+      if (data.productId) {
+        await client.product.update({
+          where: { id: data.productId },
+          data: { quantity: { increment: data.quantity } },
+        });
+      } else if (data.nonId) {
+        await client.non.update({
+          where: { id: data.nonId },
+          data: { quantity: { increment: data.quantity } },
+        });
+      }
 
       return ret;
     });

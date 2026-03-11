@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Unit, ProductType } from '@prisma/client';
+import { Unit } from '@prisma/client';
 
 interface CreateProductDto {
   name: string;
@@ -11,7 +11,6 @@ interface CreateProductDto {
   sellPrice: number;
   price: number;
   quantity: number;
-  type?: ProductType;
   branchId: string;
   userId: string;
 }
@@ -34,7 +33,6 @@ interface UpdateProductDto {
   sellPrice?: number;
   price?: number;
   quantity?: number;
-  type?: ProductType;
   userId: string;
 }
 
@@ -42,13 +40,12 @@ interface UpdateProductDto {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string, barcode?: string, type?: ProductType) {
+  findAll(branchId?: string, barcode?: string) {
     return this.prisma.product.findMany({
       where: {
         status: 'ACTIVE',
         ...(branchId ? { branchId } : {}),
         ...(barcode ? { barcode } : {}),
-        ...(type ? { type } : {}),
       },
       orderBy: { createdAt: 'desc' },
     });

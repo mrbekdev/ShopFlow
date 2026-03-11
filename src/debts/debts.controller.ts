@@ -20,6 +20,14 @@ export class DebtsController {
     return this.debtsService.findAll(branchId, sellerId);
   }
 
+  @Get('total-remaining')
+  getTotalRemaining(
+    @Query('branchId') branchId?: string,
+    @Query('sellerId') sellerId?: string,
+  ) {
+    return this.debtsService.getTotalRemaining(branchId, sellerId);
+  }
+
   @Get(':id/payments')
   getPayments(@Param('id') id: string) {
     return this.debtsService.getPayments(id);

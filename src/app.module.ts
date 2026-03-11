@@ -13,6 +13,7 @@ import { DebtsModule } from './debts/debts.module';
 import { ReturnsModule } from './returns/returns.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { NonvoyModule } from './nonvoy/nonvoy.module';
+import { NonModule } from './non/non.module';
 
 import { SeedService } from './seed/seed.service';
 
@@ -32,6 +33,7 @@ import { SeedService } from './seed/seed.service';
     ReturnsModule,
     TransfersModule,
     NonvoyModule,
+    NonModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedService],

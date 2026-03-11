@@ -10,7 +10,7 @@ class ProductionMaterialDto {
 class CreateProductionDto {
   branchId: string;
   createdBy: string;
-  finishedProductId: string;
+  finishedNonId: string;
   finishedProductName: string;
   outputQuantity: number;
   expenses?: number;

@@ -56,6 +56,7 @@ model Branch {
   transfersTo   BranchTransfer[] @relation("ToBranch")
   nonvoyProducts NonvoyProduct[]
   productionRecords ProductionRecord[]
+  nons          Non[]
 }
 
 model User {
@@ -73,11 +74,6 @@ model User {
   productions      ProductionRecord[] @relation("Producer")
 }
 
-enum ProductType {
-  PRODUCT
-  MATERIAL
-}
-
 model Product {
   id        String       @id @default(uuid())
   name      String
@@ -88,7 +84,6 @@ model Product {
   sellPrice Float
   price     Float        @default(0)
   quantity  Int
-  type      ProductType  @default(PRODUCT)
   status    ProductStatus @default(ACTIVE)
   branchId  String
   createdAt DateTime     @default(now())
@@ -97,9 +92,29 @@ model Product {
   saleItems SaleItem[]
   histories ProductHistory[]
   producedRecords     ProductionRecord[]   @relation("ProducedProduct")
+  returns             ProductReturn[]
   usedInProductions   ProductionMaterial[] @relation("MaterialProduct")
 
   @@unique([barcode, branchId])
+}
+
+model Non {
+  id        String   @id @default(uuid())
+  name      String
+  model     String
+  unit      Unit     @default(dona)
+  barcode   String   @default("")
+  costPrice Float    @default(0)
+  price     Float    @default(0) // Optom narxi
+  sellPrice Float
+  quantity  Float    @default(0)
+  branchId  String
+  createdAt DateTime @default(now())
+
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  saleItems SaleItem[]
+  producedRecords ProductionRecord[]
+  returns         ProductReturn[]
 }
 
 model Sale {
@@ -124,16 +139,18 @@ model Sale {
 }
 
 model SaleItem {
-  id         String  @id @default(uuid())
-  saleId     String
-  productId  String
+  id          String  @id @default(uuid())
+  saleId      String
+  productId   String?
+  nonId       String?
   productName String
-  quantity   Int
-  price      Float
-  total      Float
+  quantity    Float
+  price       Float
+  total       Float
 
-  sale    Sale    @relation(fields: [saleId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  sale    Sale     @relation(fields: [saleId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+  non     Non?     @relation(fields: [nonId], references: [id])
 }
 
 model Debt {
@@ -167,7 +184,8 @@ model DebtPayment {
 model ProductReturn {
   id           String     @id @default(uuid())
   saleId       String?
-  productId    String
+  productId    String?
+  nonId        String?
   productName  String
   quantity     Int
   reason       String
@@ -178,6 +196,8 @@ model ProductReturn {
   createdAt    DateTime   @default(now())
 
   branch Branch @relation(fields: [branchId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
+  non     Non?     @relation(fields: [nonId], references: [id])
 }
 
 model BranchTransfer {
@@ -225,7 +245,8 @@ model ProductionRecord {
   id                  String   @id @default(uuid())
   branchId            String
   createdBy           String
-  finishedProductId   String
+  finishedProductId   String?
+  finishedNonId       String?
   finishedProductName String
   outputQuantity      Float
   expenses            Float?
@@ -233,7 +254,8 @@ model ProductionRecord {
 
   branch              Branch   @relation(fields: [branchId], references: [id])
   user                User     @relation("Producer", fields: [createdBy], references: [id])
-  finishedProduct     Product  @relation("ProducedProduct", fields: [finishedProductId], references: [id])
+  finishedProduct     Product? @relation("ProducedProduct", fields: [finishedProductId], references: [id])
+  finishedNon         Non? @relation(fields: [finishedNonId], references: [id])
   materials           ProductionMaterial[]
 }
 

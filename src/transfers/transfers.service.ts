@@ -110,7 +110,6 @@ export class TransfersService {
             sellPrice: fromProduct.sellPrice,
             price: fromProduct.price,
             quantity: data.quantity,
-            type: fromProduct.type, // Preserve product type (MATERIAL or PRODUCT)
             status: 'ACTIVE',
             branchId: data.toBranchId,
           },

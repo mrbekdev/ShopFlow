@@ -13,15 +13,17 @@ interface CreateReturnDto {
   refundType: RefundType;
   branchId: string;
   sellerId: string;
+  shopId: string;
 }
 
 @Injectable()
 export class ReturnsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string, sellerId?: string) {
+  findAll(shopId: string, branchId?: string, sellerId?: string) {
     return this.prisma.productReturn.findMany({
       where: {
+        shopId,
         ...(branchId ? { branchId } : {}),
         ...(sellerId ? { sellerId } : {}),
       },

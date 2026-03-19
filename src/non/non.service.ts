@@ -5,9 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class NonService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(branchId?: string) {
+  findAll(shopId: string, branchId?: string) {
     return this.prisma.non.findMany({
-      where: branchId ? { branchId } : {},
+      where: {
+        shopId,
+        ...(branchId ? { branchId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

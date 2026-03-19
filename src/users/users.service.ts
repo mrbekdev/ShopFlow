@@ -9,7 +9,8 @@ interface CreateUserDto {
   username: string;
   password: string;
   role: UserRole;
-  branchId: string;
+  shopId?: string;
+  branchId?: string;
 }
 
 interface UpdateUserDto {
@@ -18,6 +19,7 @@ interface UpdateUserDto {
   username?: string;
   password?: string;
   role?: UserRole;
+  shopId?: string;
   branchId?: string;
 }
 
@@ -25,24 +27,31 @@ interface UpdateUserDto {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  findAll(shopId?: string) {
+    return this.prisma.user.findMany({
+      where: {
+        ...(shopId ? { shopId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async create(data: CreateUserDto) {
-    const hashed = await bcrypt.hash(data.password, 10);
+    const { password, ...userData } = data;
+    const hashed = await bcrypt.hash(password, 10);
     return this.prisma.user.create({
       data: {
-        ...data,
+        ...userData,
         password: hashed,
       },
     });
   }
 
   async update(id: string, data: UpdateUserDto) {
-    const updateData: any = { ...data };
-    if (data.password) {
-      updateData.password = await bcrypt.hash(data.password, 10);
+    const { password, ...updateFields } = data;
+    const updateData: any = { ...updateFields };
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
     try {
       return await this.prisma.user.update({ where: { id }, data: updateData });

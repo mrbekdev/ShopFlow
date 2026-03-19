@@ -1,15 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-generator client {
-  provider = "prisma-client-js"
+
+model Shop {
+  id                String             @id @default(uuid())
+  name              String
+  phone             String?
+  address           String?
+  createdAt         DateTime           @default(now())
+  hasBakery         Boolean            @default(false)
+  branches          Branch[]
+  debts             Debt[]
+  nons              Non[]
+  nonvoyProducts    NonvoyProduct[]
+  products          Product[]
+  returns           ProductReturn[]
+  productionRecords ProductionRecord[]
+  sales             Sale[]
+  users             User[]
+  transfers         BranchTransfer[]
 }
+
+model Branch {
+  id                String             @id @default(uuid())
+  name              String
+  address           String?
+  createdAt         DateTime           @default(now())
+  type              BranchType         @default(SOTISH)
+  shopId            String
+  shop              Shop               @relation(fields: [shopId], references: [id])
+  transfersFrom     BranchTransfer[]   @relation("FromBranch")
+  transfersTo       BranchTransfer[]   @relation("ToBranch")
+  debts             Debt[]
+  nons              Non[]
+  nonvoyProducts    NonvoyProduct[]
+  products          Product[]
+  returns           ProductReturn[]
+  productionRecords ProductionRecord[]
+  sales             Sale[]
+  users             User[]
+}
+
+model User {
+  id               String             @id @default(uuid())
+  fullName         String
+  phone            String             @unique
+  username         String             @unique
+  password         String
+  role             UserRole
+  branchId         String?
+  createdAt        DateTime           @default(now())
+  shopId           String?
+  productHistories ProductHistory[]
+  productions      ProductionRecord[] @relation("Producer")
+  branch           Branch?            @relation(fields: [branchId], references: [id])
+  shop             Shop?              @relation(fields: [shopId], references: [id])
+}
+
+model Product {
+  id                String               @id @default(uuid())
+  name              String
+  model             String
+  unit              Unit
+  barcode           String
+  costPrice         Float
+  sellPrice         Float
+  price             Float                @default(0)
+  quantity          Int
+  status            ProductStatus        @default(ACTIVE)
+  branchId          String
+  createdAt         DateTime             @default(now())
+  shopId            String
+  branch            Branch               @relation(fields: [branchId], references: [id])
+  shop              Shop                 @relation(fields: [shopId], references: [id])
+  histories         ProductHistory[]
+  returns           ProductReturn[]
+  usedInProductions ProductionMaterial[] @relation("MaterialProduct")
+  producedRecords   ProductionRecord[]   @relation("ProducedProduct")
+  saleItems         SaleItem[]
+
+  @@unique([barcode, branchId])
+}
+
+model Non {
+  id              String             @id @default(uuid())
+  name            String
+  model           String
+  unit            Unit               @default(dona)
+  barcode         String             @default("")
+  costPrice       Float              @default(0)
+  price           Float              @default(0)
+  sellPrice       Float
+  quantity        Float              @default(0)
+  branchId        String
+  createdAt       DateTime           @default(now())
+  shopId          String
+  branch          Branch             @relation(fields: [branchId], references: [id])
+  shop            Shop               @relation(fields: [shopId], references: [id])
+  returns         ProductReturn[]
+  producedRecords ProductionRecord[]
+  saleItems       SaleItem[]
+}
+
+model Sale {
+  id             String       @id @default(uuid())
+  totalAmount    Float
+  paymentType    PaymentType
+  cashAmount     Float?
+  cardAmount     Float?
+  terminalAmount Float?
+  debtAmount     Float?
+  customerName   String?
+  customerPhone  String?
+  prepayment     Float?
+  prepaymentType PaymentType?
+  sellerId       String
+  sellerRole     UserRole
+  branchId       String
+  createdAt      DateTime     @default(now())
+  shopId         String
+  branch         Branch       @relation(fields: [branchId], references: [id])
+  shop           Shop         @relation(fields: [shopId], references: [id])
+  items          SaleItem[]
+}
+
+model SaleItem {
+  id          String   @id @default(uuid())
+  saleId      String
+  productId   String?
+  productName String
+  quantity    Float
+  price       Float
+  total       Float
+  nonId       String?
+  non         Non?     @relation(fields: [nonId], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
+  sale        Sale     @relation(fields: [saleId], references: [id])
+}
+
+model Debt {
+  id            String        @id @default(uuid())
+  saleId        String
+  customerName  String
+  customerPhone String
+  totalDebt     Float
+  paidAmount    Float
+  remaining     Float
+  branchId      String
+  sellerId      String
+  createdAt     DateTime      @default(now())
+  shopId        String
+  branch        Branch        @relation(fields: [branchId], references: [id])
+  shop          Shop          @relation(fields: [shopId], references: [id])
+  payments      DebtPayment[]
+}
+
+model DebtPayment {
+  id           String      @id @default(uuid())
+  debtId       String
+  amount       Float
+  paymentType  PaymentType
+  isPrepayment Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  sellerId     String?
+  debt         Debt        @relation(fields: [debtId], references: [id])
+}
+
+model ProductReturn {
+  id           String     @id @default(uuid())
+  saleId       String?
+  productId    String?
+  productName  String
+  quantity     Int
+  reason       String
+  refundAmount Float
+  refundType   RefundType
+  branchId     String
+  sellerId     String
+  createdAt    DateTime   @default(now())
+  nonId        String?
+  shopId       String
+  branch       Branch     @relation(fields: [branchId], references: [id])
+  non          Non?       @relation(fields: [nonId], references: [id])
+  product      Product?   @relation(fields: [productId], references: [id])
+  shop         Shop       @relation(fields: [shopId], references: [id])
+}
+
+model BranchTransfer {
+  id            String   @id @default(uuid())
+  productId     String
+  productName   String
+  quantity      Int
+  fromBranchId  String
+  toBranchId    String
+  transferredBy String
+  createdAt     DateTime @default(now())
+  shopId        String
+  fromBranch    Branch   @relation("FromBranch", fields: [fromBranchId], references: [id])
+  toBranch      Branch   @relation("ToBranch", fields: [toBranchId], references: [id])
+  shop          Shop     @relation(fields: [shopId], references: [id])
+}
+
+model NonvoyProduct {
+  id             String   @id @default(uuid())
+  expenses       Float
+  totalCost      Float
+  productName    String
+  model          String
+  outputQuantity Int
+  sellPrice      Float
+  branchId       String
+  createdBy      String
+  createdAt      DateTime @default(now())
+  shopId         String
+  branch         Branch   @relation(fields: [branchId], references: [id])
+  shop           Shop     @relation(fields: [shopId], references: [id])
+}
+
+model ProductHistory {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  action    String
+  changes   String?
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ProductionRecord {
+  id                  String               @id @default(uuid())
+  branchId            String
+  createdBy           String
+  finishedProductId   String?
+  finishedProductName String
+  outputQuantity      Float
+  expenses            Float?
+  createdAt           DateTime             @default(now())
+  finishedNonId       String?
+  shopId              String
+  materials           ProductionMaterial[]
+  branch              Branch               @relation(fields: [branchId], references: [id])
+  user                User                 @relation("Producer", fields: [createdBy], references: [id])
+  finishedNon         Non?                 @relation(fields: [finishedNonId], references: [id])
+  finishedProduct     Product?             @relation("ProducedProduct", fields: [finishedProductId], references: [id])
+  shop                Shop                 @relation(fields: [shopId], references: [id])
+}
+
+model ProductionMaterial {
+  id           String           @id @default(uuid())
+  productionId String
+  productId    String
+  productName  String
+  quantity     Float
+  product      Product          @relation("MaterialProduct", fields: [productId], references: [id])
+  production   ProductionRecord @relation(fields: [productionId], references: [id], onDelete: Cascade)
+}
+
 enum UserRole {
   admin
   kassir
   omborchi
   nonvoy
+  bigAdmin
 }
 
 enum BranchType {
@@ -38,234 +296,4 @@ enum RefundType {
 enum ProductStatus {
   ACTIVE
   DELETED
-}
-
-model Branch {
-  id        String     @id @default(uuid())
-  name      String
-  address   String?
-  type      BranchType @default(SOTISH)
-  createdAt DateTime   @default(now())
-
-  users     User[]
-  products  Product[]
-  sales     Sale[]
-  debts     Debt[]
-  returns   ProductReturn[]
-  transfersFrom BranchTransfer[] @relation("FromBranch")
-  transfersTo   BranchTransfer[] @relation("ToBranch")
-  nonvoyProducts NonvoyProduct[]
-  productionRecords ProductionRecord[]
-  nons          Non[]
-}
-
-model User {
-  id        String   @id @default(uuid())
-  fullName  String
-  phone     String   @unique
-  username  String   @unique
-  password  String
-  role      UserRole
-  branchId  String
-  createdAt DateTime @default(now())
-
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  productHistories ProductHistory[]
-  productions      ProductionRecord[] @relation("Producer")
-}
-
-model Product {
-  id        String       @id @default(uuid())
-  name      String
-  model     String
-  unit      Unit
-  barcode   String
-  costPrice Float
-  sellPrice Float
-  price     Float        @default(0)
-  quantity  Int
-  status    ProductStatus @default(ACTIVE)
-  branchId  String
-  createdAt DateTime     @default(now())
-
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  saleItems SaleItem[]
-  histories ProductHistory[]
-  producedRecords     ProductionRecord[]   @relation("ProducedProduct")
-  returns             ProductReturn[]
-  usedInProductions   ProductionMaterial[] @relation("MaterialProduct")
-
-  @@unique([barcode, branchId])
-}
-
-model Non {
-  id        String   @id @default(uuid())
-  name      String
-  model     String
-  unit      Unit     @default(dona)
-  barcode   String   @default("")
-  costPrice Float    @default(0)
-  price     Float    @default(0) // Optom narxi
-  sellPrice Float
-  quantity  Float    @default(0)
-  branchId  String
-  createdAt DateTime @default(now())
-
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  saleItems SaleItem[]
-  producedRecords ProductionRecord[]
-  returns         ProductReturn[]
-}
-
-model Sale {
-  id             String       @id @default(uuid())
-  totalAmount    Float
-  paymentType    PaymentType
-  cashAmount     Float?
-  cardAmount     Float?
-  terminalAmount Float?
-  debtAmount     Float?
-  customerName   String?
-  customerPhone  String?
-  prepayment     Float?
-  prepaymentType PaymentType?
-  sellerId       String
-  sellerRole     UserRole
-  branchId       String
-  createdAt      DateTime     @default(now())
-
-  branch Branch @relation(fields: [branchId], references: [id])
-  items  SaleItem[]
-}
-
-model SaleItem {
-  id          String  @id @default(uuid())
-  saleId      String
-  productId   String?
-  nonId       String?
-  productName String
-  quantity    Float
-  price       Float
-  total       Float
-
-  sale    Sale     @relation(fields: [saleId], references: [id])
-  product Product? @relation(fields: [productId], references: [id])
-  non     Non?     @relation(fields: [nonId], references: [id])
-}
-
-model Debt {
-  id           String   @id @default(uuid())
-  saleId       String
-  customerName String
-  customerPhone String
-  totalDebt    Float
-  paidAmount   Float
-  remaining    Float
-  branchId     String
-  sellerId     String
-  createdAt    DateTime @default(now())
-
-  branch   Branch       @relation(fields: [branchId], references: [id])
-  payments DebtPayment[]
-}
-
-model DebtPayment {
-  id          String      @id @default(uuid())
-  debtId      String
-  amount      Float
-  paymentType PaymentType
-  isPrepayment Boolean     @default(false)
-  sellerId    String?
-  createdAt   DateTime    @default(now())
-
-  debt Debt @relation(fields: [debtId], references: [id])
-}
-
-model ProductReturn {
-  id           String     @id @default(uuid())
-  saleId       String?
-  productId    String?
-  nonId        String?
-  productName  String
-  quantity     Int
-  reason       String
-  refundAmount Float
-  refundType   RefundType
-  branchId     String
-  sellerId     String
-  createdAt    DateTime   @default(now())
-
-  branch Branch @relation(fields: [branchId], references: [id])
-  product Product? @relation(fields: [productId], references: [id])
-  non     Non?     @relation(fields: [nonId], references: [id])
-}
-
-model BranchTransfer {
-  id           String   @id @default(uuid())
-  productId    String
-  productName  String
-  quantity     Int
-  fromBranchId String
-  toBranchId   String
-  transferredBy String
-  createdAt    DateTime @default(now())
-
-  fromBranch Branch @relation("FromBranch", fields: [fromBranchId], references: [id])
-  toBranch   Branch @relation("ToBranch", fields: [toBranchId], references: [id])
-}
-
-model NonvoyProduct {
-  id            String   @id @default(uuid())
-  expenses      Float
-  totalCost     Float
-  productName   String
-  model         String
-  outputQuantity Int
-  sellPrice     Float
-  branchId      String
-  createdBy     String
-  createdAt     DateTime @default(now())
-
-  branch Branch @relation(fields: [branchId], references: [id])
-}
-
-model ProductHistory {
-  id          String   @id @default(uuid())
-  productId   String
-  userId      String
-  action      String   // CREATE, UPDATE, DELETE
-  changes     String?  // JSON string
-  createdAt   DateTime @default(now())
-
-  product     Product  @relation(fields: [productId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
-}
-
-model ProductionRecord {
-  id                  String   @id @default(uuid())
-  branchId            String
-  createdBy           String
-  finishedProductId   String?
-  finishedNonId       String?
-  finishedProductName String
-  outputQuantity      Float
-  expenses            Float?
-  createdAt           DateTime @default(now())
-
-  branch              Branch   @relation(fields: [branchId], references: [id])
-  user                User     @relation("Producer", fields: [createdBy], references: [id])
-  finishedProduct     Product? @relation("ProducedProduct", fields: [finishedProductId], references: [id])
-  finishedNon         Non? @relation(fields: [finishedNonId], references: [id])
-  materials           ProductionMaterial[]
-}
-
-model ProductionMaterial {
-  id               String   @id @default(uuid())
-  productionId     String
-  productId        String
-  productName      String
-  quantity         Float
-
-  production       ProductionRecord @relation(fields: [productionId], references: [id], onDelete: Cascade)
-  product          Product          @relation("MaterialProduct", fields: [productId], references: [id])
 }

@@ -16,6 +16,7 @@ import { NonvoyModule } from './nonvoy/nonvoy.module';
 import { NonModule } from './non/non.module';
 
 import { SeedService } from './seed/seed.service';
+import { ShopsModule } from './shops/shops.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SeedService } from './seed/seed.service';
     TransfersModule,
     NonvoyModule,
     NonModule,
+    ShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedService],

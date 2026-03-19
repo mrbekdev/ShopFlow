@@ -13,10 +13,10 @@ interface CreateProductDto {
   quantity: number;
   branchId: string;
   userId: string;
+  shopId: string;
 }
 
 function generateBarcode(): string {
-  // Generate a 13-digit numeric barcode (EAN-13 style)
   let barcode = '';
   for (let i = 0; i < 13; i++) {
     barcode += Math.floor(Math.random() * 10).toString();
@@ -34,16 +34,18 @@ interface UpdateProductDto {
   price?: number;
   quantity?: number;
   userId: string;
+  shopId: string;
 }
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string, barcode?: string) {
+  findAll(shopId: string, branchId?: string, barcode?: string) {
     return this.prisma.product.findMany({
       where: {
         status: 'ACTIVE',
+        shopId,
         ...(branchId ? { branchId } : {}),
         ...(barcode ? { barcode } : {}),
       },
@@ -51,17 +53,20 @@ export class ProductsService {
     });
   }
 
-  getHistory(productId: string) {
+  getHistory(productId: string, shopId: string) {
     return this.prisma.productHistory.findMany({
-      where: { productId },
+      where: {
+        productId,
+        product: { shopId }
+      },
       include: { user: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+  async findOne(id: string, shopId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, shopId },
     });
     if (!product) {
       throw new NotFoundException('Mahsulot topilmadi');
@@ -84,7 +89,9 @@ export class ProductsService {
           let newBarcode: string;
           do {
             newBarcode = generateBarcode();
-          } while (await tx.product.findFirst({ where: { barcode: newBarcode } }));
+          } while (await tx.product.findFirst({
+            where: { barcode: newBarcode, shopId: productData.shopId }
+          }));
           productData.barcode = newBarcode;
         }
 
@@ -92,7 +99,8 @@ export class ProductsService {
         const existingProduct = await tx.product.findFirst({
           where: {
             barcode: productData.barcode,
-            branchId: productData.branchId
+            branchId: productData.branchId,
+            shopId: productData.shopId
           }
         });
 
@@ -150,7 +158,9 @@ export class ProductsService {
         let newBarcode: string;
         do {
           newBarcode = generateBarcode();
-        } while (await tx.product.findFirst({ where: { barcode: newBarcode } }));
+        } while (await tx.product.findFirst({
+          where: { barcode: newBarcode, shopId: productData.shopId }
+        }));
         productData.barcode = newBarcode;
       }
 
@@ -159,6 +169,7 @@ export class ProductsService {
         where: {
           barcode: productData.barcode,
           branchId: productData.branchId,
+          shopId: productData.shopId,
         },
       });
 
@@ -210,9 +221,9 @@ export class ProductsService {
   async update(id: string, data: UpdateProductDto) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const { userId, ...updateData } = data;
+        const { userId, shopId, ...updateData } = data;
 
-        const oldProduct = await tx.product.findUnique({ where: { id } });
+        const oldProduct = await tx.product.findFirst({ where: { id, shopId } });
         if (!oldProduct) throw new NotFoundException('Mahsulot topilmadi');
 
         const product = await tx.product.update({ where: { id }, data: updateData });
@@ -233,9 +244,13 @@ export class ProductsService {
     }
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: string, userId: string, shopId: string) {
     try {
       return await this.prisma.$transaction(async (tx) => {
+        // Find product first to ensure it belongs to the shop
+        const oldProduct = await tx.product.findFirst({ where: { id, shopId } });
+        if (!oldProduct) throw new NotFoundException('Mahsulot topilmadi');
+
         // Use soft delete by updating status to 'DELETED'
         const product = await tx.product.update({
           where: { id },
@@ -259,14 +274,21 @@ export class ProductsService {
     }
   }
 
-  async deleteMany(ids: string[], userId: string) {
+  async deleteMany(ids: string[], userId: string, shopId: string) {
     return this.prisma.$transaction(async (tx) => {
+      // Filter ids to ensure they belong to the shop
+      const validProducts = await tx.product.findMany({
+        where: { id: { in: ids }, shopId },
+        select: { id: true }
+      });
+      const validIds = validProducts.map(p => p.id);
+
       const result = await tx.product.updateMany({
-        where: { id: { in: ids } },
+        where: { id: { in: validIds } },
         data: { status: 'DELETED' },
       });
 
-      for (const id of ids) {
+      for (const id of validIds) {
         await tx.productHistory.create({
           data: {
             productId: id,

@@ -1,13 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, Request } from '@nestjs/common';
 import { NonService } from './non.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('non')
+@UseGuards(JwtAuthGuard)
 export class NonController {
   constructor(private readonly nonService: NonService) {}
 
   @Get()
-  findAll(@Query('branchId') branchId?: string) {
-    return this.nonService.findAll(branchId);
+  findAll(@Request() req, @Query('branchId') branchId?: string) {
+    return this.nonService.findAll(req.user.shopId, branchId);
   }
 
   @Get(':id')
@@ -16,8 +18,8 @@ export class NonController {
   }
 
   @Post()
-  create(@Body() data: any) {
-    return this.nonService.create(data);
+  create(@Request() req, @Body() data: any) {
+    return this.nonService.create({ ...data, shopId: req.user.shopId });
   }
 
   @Patch(':id')
@@ -35,3 +37,4 @@ export class NonController {
     return this.nonService.remove(id);
   }
 }
+

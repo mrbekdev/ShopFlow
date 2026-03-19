@@ -15,15 +15,19 @@ interface CreateProductionDto {
   outputQuantity: number;
   expenses?: number;
   materials: ProductionMaterialDto[];
+  shopId: string;
 }
 
 @Injectable()
 export class NonvoyService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string) {
+  findAll(shopId: string, branchId?: string) {
     return this.prisma.productionRecord.findMany({
-      where: branchId ? { branchId } : undefined,
+      where: {
+        shopId,
+        ...(branchId ? { branchId } : {}),
+      },
       include: {
         materials: true,
         user: true,
@@ -37,6 +41,7 @@ export class NonvoyService {
       // 1. Create Production Record
       const production = await tx.productionRecord.create({
         data: {
+          shopId: data.shopId,
           branchId: data.branchId,
           createdBy: data.createdBy,
           finishedNonId: data.finishedNonId,

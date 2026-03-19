@@ -26,15 +26,17 @@ interface CreateSaleInput {
   sellerId: string;
   sellerRole: UserRole;
   branchId: string;
+  shopId: string;
 }
 
 @Injectable()
 export class SalesService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string, sellerId?: string) {
+  findAll(shopId: string, branchId?: string, sellerId?: string) {
     return this.prisma.sale.findMany({
       where: {
+        shopId,
         ...(branchId ? { branchId } : {}),
         ...(sellerId ? { sellerId } : {}),
       },
@@ -42,8 +44,7 @@ export class SalesService {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-  async getStats(branchId?: string, dateFrom?: string, dateTo?: string) {
+  async getStats(shopId: string, branchId?: string, dateFrom?: string, dateTo?: string) {
     // Build date filter
     const dateFilter: any = {};
     if (dateFrom) {
@@ -56,6 +57,7 @@ export class SalesService {
     // Fetch sales with items and related products
     const sales = await this.prisma.sale.findMany({
       where: {
+        shopId,
         ...(branchId ? { branchId } : {}),
         ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
       },
@@ -73,8 +75,8 @@ export class SalesService {
     let totalCostPrice = 0;
     let totalItemsSold = 0;
 
-    for (const sale of sales) {
-      for (const item of sale.items) {
+    for (const sale of (sales as any[])) {
+      for (const item of (sale as any).items) {
         const sellPrice = item.price;
         const productCost = (item as any).product?.costPrice || 0;
         const nonCost = (item as any).non?.costPrice || 0;
@@ -98,6 +100,7 @@ export class SalesService {
     };
   }
 
+
   async create(data: CreateSaleInput) {
     return this.prisma.$transaction(async (tx) => {
       const client = tx as any;
@@ -116,6 +119,7 @@ export class SalesService {
           sellerId: data.sellerId,
           sellerRole: data.sellerRole,
           branchId: data.branchId,
+          shopId: data.shopId,
           items: {
             create: data.items.map((i) => ({
               productId: i.productId,
@@ -161,6 +165,7 @@ export class SalesService {
             remaining: remaining,
             branchId: data.branchId,
             sellerId: data.sellerId,
+            shopId: data.shopId,
           },
         });
 

@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, Request } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { UsersService } from './users.service';
 import { UserRole } from '@prisma/client';
 
@@ -21,12 +24,14 @@ class UpdateUserDto {
 }
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Request() req, @Query('shopId') shopId?: string) {
+    const effectiveShopId = req.user.role === 'bigAdmin' ? shopId : req.user.shopId;
+    return this.usersService.findAll(effectiveShopId);
   }
 
   @Post()

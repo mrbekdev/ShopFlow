@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors, BadRequestException, UseGuards, Request } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { Unit } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as XLSX from 'xlsx';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 class CreateProductDto {
   name: string;
@@ -15,6 +16,7 @@ class CreateProductDto {
   quantity: number;
   branchId: string;
   userId: string;
+  shopId: string;
 }
 
 class UpdateProductDto {
@@ -27,9 +29,11 @@ class UpdateProductDto {
   price?: number;
   quantity?: number;
   userId: string;
+  shopId: string;
 }
 
 @Controller('products')
+@UseGuards(JwtAuthGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) { }
 
@@ -39,36 +43,44 @@ export class ProductsController {
   }
 
   @Delete('bulk')
-  deleteMany(@Body() body: { ids: string[], userId: string }) {
-    return this.productsService.deleteMany(body.ids, body.userId);
+  deleteMany(@Request() req, @Body() body: { ids: string[], userId: string, shopId?: string }) {
+    const shopId = req.user.role === 'bigAdmin' ? body.shopId : req.user.shopId;
+    return this.productsService.deleteMany(body.ids, body.userId, shopId!);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req, @Query('shopId') queryShopId?: string) {
+    const shopId = req.user.role === 'bigAdmin' ? queryShopId : req.user.shopId;
+    return this.productsService.findOne(id, shopId!);
   }
 
   @Get(':id/history')
-  getHistory(@Param('id') id: string) {
-    return this.productsService.getHistory(id);
+  getHistory(@Param('id') id: string, @Request() req, @Query('shopId') queryShopId?: string) {
+    const shopId = req.user.role === 'bigAdmin' ? queryShopId : req.user.shopId;
+    return this.productsService.getHistory(id, shopId!);
   }
 
   @Get()
   findAll(
+    @Request() req,
+    @Query('shopId') shopId?: string,
     @Query('branchId') branchId?: string,
     @Query('barcode') barcode?: string,
   ) {
-    return this.productsService.findAll(branchId, barcode);
+    const effectiveShopId = req.user.role === 'bigAdmin' ? shopId : req.user.shopId;
+    return this.productsService.findAll(effectiveShopId!, branchId, barcode);
   }
 
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productsService.create(dto);
+  create(@Request() req, @Body() dto: CreateProductDto) {
+    const shopId = req.user.role === 'bigAdmin' ? dto.shopId : req.user.shopId;
+    return this.productsService.create({ ...dto, shopId: shopId! });
   }
 
   @Post('import')
   @UseInterceptors(FileInterceptor('file'))
   async importExcel(
+    @Request() req,
     @UploadedFile() file: Express.Multer.File,
     @Query('branchId') branchId?: string,
     @Query('userId') userId?: string,
@@ -91,6 +103,7 @@ export class ProductsController {
     const data: CreateProductDto[] = rows.map((row) => {
       const unitRaw = (row.Unit ?? row.unit ?? 'dona').toString().toLowerCase();
       const unit: Unit = unitRaw === 'kg' ? 'kg' : 'dona';
+      const shopId = req.user.role === 'bigAdmin' ? (row.shopId || req.query.shopId) : req.user.shopId;
 
       const record: CreateProductDto = {
         name: row.Name ?? row.name ?? '',
@@ -103,6 +116,7 @@ export class ProductsController {
         quantity: Number(row.Quantity ?? row.quantity ?? 0),
         branchId,
         userId,
+        shopId: shopId!,
       };
 
       return record;
@@ -116,15 +130,17 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.productsService.update(id, dto);
+  update(@Param('id') id: string, @Request() req, @Body() dto: UpdateProductDto) {
+    const shopId = req.user.role === 'bigAdmin' ? dto.shopId : req.user.shopId;
+    return this.productsService.update(id, { ...dto, shopId: shopId! });
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Query('userId') userId: string) {
+  remove(@Param('id') id: string, @Request() req, @Query('userId') userId: string, @Query('shopId') queryShopId?: string) {
     if (!userId) {
       throw new BadRequestException('userId is required');
     }
-    return this.productsService.remove(id, userId);
+    const shopId = req.user.role === 'bigAdmin' ? queryShopId : req.user.shopId;
+    return this.productsService.remove(id, userId, shopId!);
   }
 }

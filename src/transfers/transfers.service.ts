@@ -8,19 +8,28 @@ interface CreateTransferDto {
   fromBranchId: string;
   toBranchId: string;
   transferredBy: string;
+  shopId: string;
 }
 
 @Injectable()
 export class TransfersService {
   constructor(private readonly prisma: PrismaService) { }
 
-  findAll(branchId?: string) {
+  findAll(shopId: string, branchId?: string) {
     return this.prisma.branchTransfer.findMany({
-      where: branchId
-        ? {
-          OR: [{ fromBranchId: branchId }, { toBranchId: branchId }],
-        }
-        : undefined,
+      where: {
+        AND: [
+          branchId
+            ? { OR: [{ fromBranchId: branchId }, { toBranchId: branchId }] }
+            : {},
+          {
+            OR: [
+              { fromBranch: { shopId } },
+              { toBranch: { shopId } }
+            ]
+          }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -36,6 +45,7 @@ export class TransfersService {
           fromBranchId: data.fromBranchId,
           toBranchId: data.toBranchId,
           transferredBy: data.transferredBy,
+          shopId: data.shopId,
         }
       });
 
@@ -72,7 +82,6 @@ export class TransfersService {
 
       if (toProduct) {
         // If it exists in destination branch, just increment quantity
-        // Also check if it was 'DELETED', if so, reactivate it optionally.
         const isDeleted = toProduct.status === 'DELETED';
         const newQuantity = isDeleted ? data.quantity : toProduct.quantity + data.quantity;
 
@@ -105,15 +114,17 @@ export class TransfersService {
             name: fromProduct.name,
             model: fromProduct.model,
             unit: fromProduct.unit,
-            barcode: fromProduct.barcode, // Exact same barcode so they match globally
+            barcode: fromProduct.barcode,
             costPrice: fromProduct.costPrice,
             sellPrice: fromProduct.sellPrice,
             price: fromProduct.price,
             quantity: data.quantity,
             status: 'ACTIVE',
+            shopId: fromProduct.shopId,
             branchId: data.toBranchId,
           },
         });
+
 
         // Log history for receiver branch (new product)
         await tx.productHistory.create({

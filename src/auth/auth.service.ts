@@ -21,7 +21,7 @@ export class AuthService {
 
   async login(username: string, password: string) {
     const user = await this.validateUser(username, password);
-    const payload = { sub: user.id, role: user.role };
+    const payload = { sub: user.id, role: user.role, shopId: user.shopId };
     const token = await this.jwtService.signAsync(payload);
     return {
       token,
@@ -31,6 +31,7 @@ export class AuthService {
         phone: user.phone,
         username: user.username,
         role: user.role,
+        shopId: user.shopId,
         branchId: user.branchId,
         createdAt: user.createdAt,
       },

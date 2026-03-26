@@ -22,12 +22,16 @@ export class ShopsController {
   }
 
   @Post()
-  create(@Body() dto: { name: string; phone?: string; address?: string; hasBakery?: boolean }) {
+  create(@Body() dto: { name: string; phone?: string; address?: string; hasBakery?: boolean; subscriptionStart?: Date; subscriptionEnd?: Date }) {
+    if (dto.subscriptionStart) dto.subscriptionStart = new Date(dto.subscriptionStart);
+    if (dto.subscriptionEnd) dto.subscriptionEnd = new Date(dto.subscriptionEnd);
     return this.shopsService.create(dto);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: { name?: string; phone?: string; address?: string; hasBakery?: boolean }) {
+  update(@Param('id') id: string, @Body() dto: { name?: string; phone?: string; address?: string; hasBakery?: boolean; subscriptionStart?: Date; subscriptionEnd?: Date }) {
+    if (dto.subscriptionStart) dto.subscriptionStart = new Date(dto.subscriptionStart);
+    if (dto.subscriptionEnd) dto.subscriptionEnd = new Date(dto.subscriptionEnd);
     return this.shopsService.update(id, dto);
   }
 

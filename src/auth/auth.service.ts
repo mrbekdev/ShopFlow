@@ -11,9 +11,29 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, pass: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { username } });
+  async validateUser(username: string, pass: string): Promise<any> {
+    const user = await this.prisma.user.findUnique({ 
+      where: { username },
+      include: {
+        shop: true,
+        branch: {
+          include: { shop: true }
+        }
+      }
+    });
     if (!user) throw new UnauthorizedException('Login yoki parol noto\'g\'ri');
+
+    const shop = user.shop || user.branch?.shop;
+    if (shop && user.role !== 'bigAdmin') {
+      const now = new Date();
+      if (shop.subscriptionStart && shop.subscriptionStart > now) {
+        throw new UnauthorizedException('Do\'kon obunasi hali boshlanmagan');
+      }
+      if (shop.subscriptionEnd && shop.subscriptionEnd < now) {
+        throw new UnauthorizedException('Do\'kon tizimdan uzatilgan (Obuna vaqti tugagan)');
+      }
+    }
+
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) throw new UnauthorizedException('Login yoki parol noto\'g\'ri');
     return user;
@@ -34,6 +54,8 @@ export class AuthService {
         shopId: user.shopId,
         branchId: user.branchId,
         createdAt: user.createdAt,
+        branch: user.branch,
+        shop: user.shop,
       },
     };
   }

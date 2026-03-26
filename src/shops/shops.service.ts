@@ -18,11 +18,11 @@ export class ShopsService {
     });
   }
 
-  create(data: { name: string; phone?: string; address?: string; hasBakery?: boolean }) {
+  create(data: { name: string; phone?: string; address?: string; hasBakery?: boolean; subscriptionStart?: Date; subscriptionEnd?: Date }) {
     return this.prisma.shop.create({ data });
   }
 
-  update(id: string, data: { name?: string; phone?: string; address?: string; hasBakery?: boolean }) {
+  update(id: string, data: { name?: string; phone?: string; address?: string; hasBakery?: boolean; subscriptionStart?: Date; subscriptionEnd?: Date }) {
     return this.prisma.shop.update({ where: { id }, data });
   }
 

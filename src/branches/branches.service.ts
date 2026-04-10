@@ -47,7 +47,35 @@ export class BranchesService {
     if (!branch) {
       throw new NotFoundException('Filial topilmadi');
     }
-    await this.prisma.branch.delete({ where: { id } });
-    return { success: true };
+    
+    try {
+      // Use transaction to handle cascading delete
+      await this.prisma.$transaction(async (tx) => {
+        // Delete related records first
+        await tx.productHistory.deleteMany({ where: { product: { branchId: id } } });
+        await tx.saleItem.deleteMany({ where: { sale: { branchId: id } } });
+        await tx.debtPayment.deleteMany({ where: { debt: { branchId: id } } });
+        await tx.debt.deleteMany({ where: { branchId: id } });
+        await tx.productReturn.deleteMany({ where: { branchId: id } });
+        await tx.sale.deleteMany({ where: { branchId: id } });
+        await tx.product.deleteMany({ where: { branchId: id } });
+        await tx.productionMaterial.deleteMany({ where: { production: { branchId: id } } });
+        await tx.productionRecord.deleteMany({ where: { branchId: id } });
+        await tx.nonvoyProduct.deleteMany({ where: { branchId: id } });
+        await tx.non.deleteMany({ where: { branchId: id } });
+        await tx.branchTransfer.deleteMany({ where: { OR: [{ fromBranchId: id }, { toBranchId: id }] } });
+        
+        // Set users branchId to null
+        await tx.user.updateMany({ where: { branchId: id }, data: { branchId: null } });
+        
+        // Finally delete the branch
+        await tx.branch.delete({ where: { id } });
+      });
+      
+      return { success: true, message: "Filial o'chirildi" };
+    } catch (error) {
+      console.error('Branch delete error:', error);
+      throw new Error(`Filial o'chirishda xatolik: ${error.message}`);
+    }
   }
 }

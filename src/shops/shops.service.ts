@@ -26,7 +26,34 @@ export class ShopsService {
     return this.prisma.shop.update({ where: { id }, data });
   }
 
-  remove(id: string) {
-    return this.prisma.shop.delete({ where: { id } });
+  async remove(id: string) {
+    try {
+      // Use transaction to handle cascading delete
+      await this.prisma.$transaction(async (tx) => {
+        // Delete related records first
+        await tx.productHistory.deleteMany({ where: { product: { shopId: id } } });
+        await tx.saleItem.deleteMany({ where: { sale: { shopId: id } } });
+        await tx.debtPayment.deleteMany({ where: { debt: { shopId: id } } });
+        await tx.debt.deleteMany({ where: { shopId: id } });
+        await tx.productReturn.deleteMany({ where: { shopId: id } });
+        await tx.sale.deleteMany({ where: { shopId: id } });
+        await tx.product.deleteMany({ where: { shopId: id } });
+        await tx.productionMaterial.deleteMany({ where: { production: { shopId: id } } });
+        await tx.productionRecord.deleteMany({ where: { shopId: id } });
+        await tx.nonvoyProduct.deleteMany({ where: { shopId: id } });
+        await tx.non.deleteMany({ where: { shopId: id } });
+        await tx.branchTransfer.deleteMany({ where: { shopId: id } });
+        await tx.user.deleteMany({ where: { shopId: id } });
+        await tx.branch.deleteMany({ where: { shopId: id } });
+        
+        // Finally delete the shop
+        await tx.shop.delete({ where: { id } });
+      });
+      
+      return { success: true, message: "Do'kon o'chirildi" };
+    } catch (error) {
+      console.error('Shop delete error:', error);
+      throw new Error(`Do'kon o'chirishda xatolik: ${error.message}`);
+    }
   }
 }

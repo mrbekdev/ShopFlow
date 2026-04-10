@@ -19,6 +19,22 @@ class CreateProductDto {
   shopId: string;
 }
 
+class BatchCreateProductDto {
+  name: string;
+  description?: string;
+  price: number;
+  category?: string;
+  unit: Unit;
+  barcode?: string;
+  minQuantity?: number;
+  stock: number;
+  isActive: boolean;
+}
+
+class BatchCreateRequestDto {
+  products: BatchCreateProductDto[];
+}
+
 class UpdateProductDto {
   name?: string;
   model?: string;
@@ -73,8 +89,33 @@ export class ProductsController {
 
   @Post()
   create(@Request() req, @Body() dto: CreateProductDto) {
+    console.log('Backend received quantity:', dto.quantity, 'type:', typeof dto.quantity);
     const shopId = req.user.role === 'bigAdmin' ? dto.shopId : req.user.shopId;
     return this.productsService.create({ ...dto, shopId: shopId! });
+  }
+
+  @Post('analyze-image')
+  @UseInterceptors(FileInterceptor('image'))
+  async analyzeImage(@Request() req, @UploadedFile() image: Express.Multer.File) {
+    if (!image) {
+      throw new BadRequestException('Rasm yuborilmadi');
+    }
+
+    const shopId = req.user.shopId;
+    const userId = req.user.id;
+    
+    return this.productsService.analyzeImage(image, userId, shopId);
+  }
+
+  @Post('batch')
+  async createBatch(@Request() req, @Body() dto: BatchCreateRequestDto) {
+    const shopId = req.user.shopId;
+    const userId = req.user.id;
+    
+    // Get default branch for the shop
+    const defaultBranch = await this.productsService.getDefaultBranch(shopId);
+    
+    return this.productsService.createBatch(dto.products, userId, shopId, defaultBranch.id);
   }
 
   @Post('import')

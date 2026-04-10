@@ -62,10 +62,25 @@ export class UsersService {
 
   async remove(id: string) {
     try {
-      await this.prisma.user.delete({ where: { id } });
-      return { success: true };
-    } catch {
-      throw new NotFoundException('Foydalanuvchi topilmadi');
+      // Use transaction to handle cascading delete
+      await this.prisma.$transaction(async (tx) => {
+        // Delete related records first (in correct order to avoid FK constraints)
+        await tx.productHistory.deleteMany({ where: { userId: id } });
+        await tx.productionRecord.deleteMany({ where: { createdBy: id } });
+        await tx.productReturn.deleteMany({ where: { sellerId: id } });
+        await tx.debtPayment.deleteMany({ where: { sellerId: id } });
+        await tx.saleItem.deleteMany({ where: { sale: { sellerId: id } } });
+        await tx.sale.deleteMany({ where: { sellerId: id } });
+        await tx.debt.deleteMany({ where: { sellerId: id } });
+        
+        // Finally delete the user
+        await tx.user.delete({ where: { id } });
+      });
+      
+      return { success: true, message: "Foydalanuvchi o'chirildi" };
+    } catch (error) {
+      console.error('User delete error:', error);
+      throw new NotFoundException(`Foydalanuvchi o'chirishda xatolik: ${error.message}`);
     }
   }
 }

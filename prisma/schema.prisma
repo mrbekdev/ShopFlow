@@ -73,7 +73,7 @@ model Product {
   costPrice         Float
   sellPrice         Float
   price             Float                @default(0)
-  quantity          Int
+  quantity          Float
   status            ProductStatus        @default(ACTIVE)
   branchId          String
   createdAt         DateTime             @default(now())

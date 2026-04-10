@@ -14,6 +14,7 @@ import { ReturnsModule } from './returns/returns.module';
 import { TransfersModule } from './transfers/transfers.module';
 import { NonvoyModule } from './nonvoy/nonvoy.module';
 import { NonModule } from './non/non.module';
+import { AiProductsModule } from './ai-products/ai-products.module';
 
 import { SeedService } from './seed/seed.service';
 import { ShopsModule } from './shops/shops.module';
@@ -24,7 +25,7 @@ import { ShopsModule } from './shops/shops.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    PrismaModule, // 👈 bu yetarli
+    PrismaModule, // bu yetarli
     AuthModule,
     BranchesModule,
     UsersModule,
@@ -35,6 +36,7 @@ import { ShopsModule } from './shops/shops.module';
     TransfersModule,
     NonvoyModule,
     NonModule,
+    AiProductsModule,
     ShopsModule,
   ],
   controllers: [AppController],

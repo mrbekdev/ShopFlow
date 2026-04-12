@@ -85,8 +85,10 @@ model Product {
   usedInProductions ProductionMaterial[] @relation("MaterialProduct")
   producedRecords   ProductionRecord[]   @relation("ProducedProduct")
   saleItems         SaleItem[]
+  code              String?
 
   @@unique([barcode, branchId])
+  @@unique([code, branchId])
 }
 
 model Non {

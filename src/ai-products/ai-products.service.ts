@@ -191,8 +191,6 @@ Iltimos, faqat yuqoridagi kabi toza JSON formatida javob bering, qo'shimcha izoh
     if (!shopId) {
       throw new BadRequestException('Shop ID talab qilinadi');
     }
-
-    // Get default branch if not provided
     const finalBranchId = branchId || await this.getDefaultBranch(shopId);
 
     return this.prisma.$transaction(async (tx) => {

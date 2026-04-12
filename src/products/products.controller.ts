@@ -10,6 +10,7 @@ class CreateProductDto {
   model: string;
   unit: Unit;
   barcode?: string;
+  code?: string;
   costPrice: number;
   sellPrice: number;
   price: number;
@@ -40,6 +41,7 @@ class UpdateProductDto {
   model?: string;
   unit?: Unit;
   barcode?: string;
+  code?: string;
   costPrice?: number;
   sellPrice?: number;
   price?: number;
@@ -151,6 +153,7 @@ export class ProductsController {
         model: row.Model ?? row.model ?? '',
         unit,
         barcode: String(row.Barcode ?? row.barcode ?? ''),
+        code: String(row.Code ?? row.code ?? ''),
         costPrice: Number(row.CostPrice ?? row.costPrice ?? 0),
         sellPrice: Number(row.SellPrice ?? row.sellPrice ?? 0),
         price: Number(row.Price ?? row.price ?? 0),
@@ -159,6 +162,8 @@ export class ProductsController {
         userId,
         shopId: shopId!,
       };
+
+      if (!record.code) delete record.code;
 
       return record;
     }).filter(r => r.name);

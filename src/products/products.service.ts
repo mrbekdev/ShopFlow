@@ -7,6 +7,7 @@ interface CreateProductDto {
   model: string;
   unit: Unit;
   barcode?: string;
+  code?: string;
   costPrice: number;
   sellPrice: number;
   price: number;
@@ -29,6 +30,7 @@ interface UpdateProductDto {
   model?: string;
   unit?: Unit;
   barcode?: string;
+  code?: string;
   costPrice?: number;
   sellPrice?: number;
   price?: number;
@@ -107,10 +109,13 @@ export class ProductsService {
           productData.barcode = newBarcode;
         }
 
-        // Check if product with this barcode exists in the branch
+        // Check if product with this barcode or code exists
         const existingProduct = await tx.product.findFirst({
           where: {
-            barcode: productData.barcode,
+            OR: [
+              { barcode: productData.barcode },
+              ...(productData.code ? [{ code: productData.code }] : [])
+            ],
             branchId: productData.branchId,
             shopId: productData.shopId
           }
@@ -178,10 +183,13 @@ export class ProductsService {
         productData.barcode = newBarcode;
       }
 
-      // Check if product with this barcode exists in the same branch
+      // Check if product with this barcode or code exists in the same branch
       const existingProduct = await tx.product.findFirst({
         where: {
-          barcode: productData.barcode,
+          OR: [
+            { barcode: productData.barcode },
+            ...(productData.code ? [{ code: productData.code }] : [])
+          ],
           branchId: productData.branchId,
           shopId: productData.shopId,
         },
@@ -240,7 +248,13 @@ export class ProductsService {
         const oldProduct = await tx.product.findFirst({ where: { id, shopId } });
         if (!oldProduct) throw new NotFoundException('Mahsulot topilmadi');
 
-        const product = await tx.product.update({ where: { id }, data: updateData });
+        const product = await tx.product.update({ 
+          where: { id }, 
+          data: {
+            ...updateData,
+            code: updateData.code === "" ? null : updateData.code
+          } 
+        });
 
         await tx.productHistory.create({
           data: {

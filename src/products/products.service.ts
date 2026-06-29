@@ -267,8 +267,9 @@ export class ProductsService {
 
         return product;
       });
-    } catch {
-      throw new NotFoundException('Mahsulot topilmadi');
+    } catch (error) {
+      console.error("❌ ProductsService.update error:", error);
+      throw error;
     }
   }
 

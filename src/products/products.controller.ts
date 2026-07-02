@@ -60,6 +60,15 @@ export class ProductsController {
     return { message: 'Bulk endpoint' };
   }
 
+  @Get('global-lookup')
+  lookupGlobal(@Query('barcode') barcode: string) {
+    if (!barcode) {
+      throw new BadRequestException('Barcode talab qilinadi');
+    }
+    return this.productsService.lookupGlobal(barcode);
+  }
+
+
   @Delete('bulk')
   deleteMany(@Request() req, @Body() body: { ids: string[], userId: string, shopId?: string }) {
     const shopId = req.user.role === 'bigAdmin' ? body.shopId : req.user.shopId;

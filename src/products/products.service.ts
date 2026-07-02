@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Unit } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 interface CreateProductDto {
   name: string;
@@ -53,7 +56,90 @@ interface BatchCreateProductDto {
 
 @Injectable()
 export class ProductsService {
+  private globalProductsCache: Map<string, any> | null = null;
+
   constructor(private readonly prisma: PrismaService) { }
+
+  private loadGlobalProducts() {
+    if (this.globalProductsCache) {
+      return this.globalProductsCache;
+    }
+
+    const cache = new Map<string, any>();
+    try {
+      const sqlPath = path.join(process.cwd(), 'shopflow.sql');
+      if (!fs.existsSync(sqlPath)) {
+        console.warn(`shopflow.sql file not found at ${sqlPath}`);
+        this.globalProductsCache = cache;
+        return cache;
+      }
+
+      console.log(`Reading and parsing shopflow.sql from ${sqlPath}...`);
+      const content = fs.readFileSync(sqlPath, 'utf8');
+      const copyHeader = 'COPY public."Product" (id, name, model, unit, barcode, "costPrice", "sellPrice", price, quantity, status, "branchId", "createdAt", "shopId", code) FROM stdin;';
+      const startIndex = content.indexOf(copyHeader);
+      if (startIndex === -1) {
+        console.warn('Could not find COPY public."Product" statement in shopflow.sql');
+        this.globalProductsCache = cache;
+        return cache;
+      }
+
+      const startOfData = startIndex + copyHeader.length;
+      const endOfData = content.indexOf('\n\\.', startOfData);
+      if (endOfData === -1) {
+        console.warn('Could not find end of COPY block in shopflow.sql');
+        this.globalProductsCache = cache;
+        return cache;
+      }
+
+      const dataSection = content.substring(startOfData, endOfData);
+      const lines = dataSection.split('\n');
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const parts = trimmed.split('\t');
+        if (parts.length >= 13) {
+          const barcode = parts[4];
+          if (barcode && barcode !== '\\N') {
+            const product = {
+              id: parts[0],
+              name: parts[1],
+              model: parts[2] === '\\N' ? '' : parts[2],
+              unit: parts[3] === '\\N' ? 'dona' : parts[3],
+              barcode: barcode,
+              costPrice: parts[5] === '\\N' ? 0 : Number(parts[5]),
+              sellPrice: parts[6] === '\\N' ? 0 : Number(parts[6]),
+              price: parts[7] === '\\N' ? 0 : Number(parts[7]),
+              quantity: parts[8] === '\\N' ? 0 : Number(parts[8]),
+              status: parts[9],
+              branchId: parts[10],
+              createdAt: parts[11],
+              shopId: parts[12],
+              code: parts[13] === '\\N' || !parts[13] ? '' : parts[13],
+            };
+            cache.set(barcode, product);
+          }
+        }
+      }
+      console.log(`Loaded ${cache.size} global products from shopflow.sql`);
+    } catch (error) {
+      console.error('Error parsing shopflow.sql:', error);
+    }
+
+    this.globalProductsCache = cache;
+    return cache;
+  }
+
+  lookupGlobal(barcode: string) {
+    const cache = this.loadGlobalProducts();
+    const product = cache.get(barcode);
+    if (!product) {
+      throw new NotFoundException('Global mahsulot topilmadi');
+    }
+    return product;
+  }
+
 
   findAll(shopId: string, branchId?: string, barcode?: string) {
     return this.prisma.product.findMany({

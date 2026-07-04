@@ -235,7 +235,12 @@ export class ProductsService {
           count++;
         } else {
           // Create new
-          const newProduct = await tx.product.create({ data: productData as any });
+          const newProduct = await tx.product.create({ 
+            data: {
+              ...productData,
+              code: productData.code === "" ? null : productData.code
+            } as any 
+          });
           await tx.productHistory.create({
             data: {
               productId: newProduct.id,
@@ -311,7 +316,12 @@ export class ProductsService {
       }
 
       // If no existing product, create a new one
-      const product = await tx.product.create({ data: productData as any });
+      const product = await tx.product.create({ 
+        data: {
+          ...productData,
+          code: productData.code === "" ? null : productData.code
+        } as any 
+      });
 
       await tx.productHistory.create({
         data: {
